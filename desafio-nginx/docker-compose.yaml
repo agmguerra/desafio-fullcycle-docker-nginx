@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  nginx: 
+    build:
+      context: nginx
+    container_name: nginx-desafio
+    restart: always
+    tty: true
+    ports:
+      - "8080:80"
+    networks:
+      - node-network 
+    depends_on:
+      - nodeapp
+
+  nodeapp:
+      build:
+        context: node
+      container_name: nodeapp
+      entrypoint: dockerize -wait tcp://mysqldb:3306 -timeout 60s docker-entrypoint.sh node index.js
+      networks:
+        - node-network
+      tty: true
+      ports:
+        - 3000:3000
+      depends_on:
+        - mysqldb
+        
+  mysqldb:
+    build:
+      context: mysql
+    command: --innodb-use-native-aio=0
+    container_name: mysqldb
+    restart: always
+    tty: true
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+    networks:
+      - node-network
+
+networks:
+  node-network:
+    driver: bridge
